@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Attendance Tracker</title>
+<style>
+:root{--navy:#172554;--blue:#2563eb;--sky:#eff6ff;--ink:#172033;--muted:#64748b;--line:#e2e8f0;--green:#15803d;--red:#b91c1c;--amber:#b45309}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,"Segoe UI",Arial,sans-serif;background:#f4f7fb;color:var(--ink)}
+header{background:linear-gradient(120deg,#172554,#1d4ed8);color:white;padding:26px max(20px,calc((100% - 1180px)/2));}
+header .eyebrow{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#bfdbfe;font-weight:700}
+header h1{margin:7px 0 6px;font-size:clamp(25px,4vw,36px)}header p{margin:0;color:#dbeafe}
+.wrap{max-width:1180px;margin:24px auto;padding:0 18px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:20px}
+.stat,.panel{background:white;border:1px solid var(--line);border-radius:16px;box-shadow:0 5px 18px #0f172a0a}
+.stat{padding:18px}.stat span{display:block;color:var(--muted);font-size:13px}.stat strong{display:block;font-size:29px;margin-top:8px}.stat small{color:var(--muted)}
+.grid{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;align-items:start}
+.panel{padding:20px;margin-bottom:18px}.panel h2{font-size:18px;margin:0 0 16px}.sub{font-size:13px;color:var(--muted);margin:-8px 0 16px}
+label{display:block;font-size:13px;font-weight:650;margin:12px 0 6px}
+input,select{width:100%;padding:11px 12px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:var(--ink);font:inherit;outline:none}
+input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px #2563eb20}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button{border:0;border-radius:9px;padding:11px 14px;font:inherit;font-weight:700;cursor:pointer;transition:.15s}
+button:hover{filter:brightness(.96);transform:translateY(-1px)}
+.primary{background:var(--blue);color:white}.secondary{background:#eaf1ff;color:#1d4ed8}.danger{background:#fee2e2;color:#991b1b}.soft{background:#f1f5f9;color:#334155}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}.actions button{flex:1}
+.toolbar{display:grid;grid-template-columns:minmax(180px,1fr) 160px 160px;gap:10px;margin-bottom:14px}
+.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:650px}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid var(--line);font-size:13px}th{color:#64748b;background:#f8fafc;font-size:11px;text-transform:uppercase;letter-spacing:.6px}
+.badge{display:inline-block;padding:5px 9px;border-radius:99px;font-size:11px;font-weight:800}.present{background:#dcfce7;color:#166534}.absent{background:#fee2e2;color:#991b1b}.late{background:#fef3c7;color:#92400e}.leave{background:#e0e7ff;color:#3730a3}
+.low{background:#fff7ed}.low td:first-child{border-left:3px solid #f97316}.tiny{padding:6px 9px;font-size:12px;margin:2px}
+.empty{text-align:center;color:var(--muted);padding:30px 10px}.notice{font-size:12px;color:var(--muted);line-height:1.5;margin-top:12px}
+.progress{height:7px;background:#e2e8f0;border-radius:99px;overflow:hidden;margin-top:6px}.progress span{display:block;height:100%;background:#2563eb}
+.history-list{display:grid;gap:9px}.history-item{border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+footer{text-align:center;padding:18px;color:#94a3b8;font-size:12px}
+@media(max-width:850px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.toolbar{grid-template-columns:1fr 1fr}.toolbar input{grid-column:1/-1}}
+@media(max-width:440px){header{padding:22px 18px}.stats{gap:9px}.stat{padding:13px}.stat strong{font-size:24px}.panel{padding:15px}.row{grid-template-columns:1fr}.toolbar{grid-template-columns:1fr}.toolbar input{grid-column:auto}}
+</style>
+</head>
+<body>
+<header>
+  <div class="eyebrow">Student tools · Attendance management</div>
+  <h1>Student Attendance Tracker</h1>
+  <p>Manage student records, mark daily attendance, and track attendance percentages.</p>
+</header>
+<main class="wrap">
+  <section class="stats">
+    <div class="stat"><span>Total students</span><strong id="totalStudents">0</strong><small>Registered students</small></div>
+    <div class="stat"><span>Present today</span><strong id="presentToday">0</strong><small>Marked present</small></div>
+    <div class="stat"><span>Absent today</span><strong id="absentToday">0</strong><small>Marked absent</small></div>
+    <div class="stat"><span>Overall attendance</span><strong id="overallPercent">0%</strong><small>Present ÷ marked days</small></div>
+  </section>
+
+  <div class="grid">
+    <aside>
+      <section class="panel">
+        <h2 id="formTitle">＋ Add student</h2>
+        <p class="sub">Enter the student's basic details.</p>
+        <form id="studentForm">
+          <input type="hidden" id="editId">
+          <label for="studentName">Full name *</label><input id="studentName" required maxlength="80" placeholder="e.g. Arun Kumar">
+          <label for="studentId">Student ID *</label><input id="studentId" required maxlength="30" placeholder="e.g. CS2026001">
+          <label for="department">Department *</label><input id="department" required maxlength="60" placeholder="e.g. B.Sc. Computer Science">
+          <div class="actions"><button class="primary" type="submit" id="saveStudent">Add student</button><button class="soft" type="button" id="cancelEdit" hidden>Cancel</button></div>
+        </form>
+        <p class="notice">Student ID must be unique. Your records are saved in this browser using Local Storage.</p>
+      </section>
+      <section class="panel">
+        <h2>⚙ Attendance settings</h2>
+        <label for="threshold">Low attendance warning (%)</label>
+        <input id="threshold" type="number" min="1" max="100" value="75">
+        <p class="notice">Students below this percentage are highlighted in the list.</p>
+      </section>
+    </aside>
+
+    <section>
+      <section class="panel">
+        <h2>🗓 Mark daily attendance</h2>
+        <div class="row">
+          <div><label for="attendanceDate">Attendance date</label><input type="date" id="attendanceDate"></div>
+          <div><label for="bulkStatus">Set all students to</label><select id="bulkStatus"><option value="Present">Present</option><option value="Absent">Absent</option><option value="Late">Late</option><option value="Leave">Leave</option></select></div>
+        </div>
+        <div class="actions"><button class="secondary" id="markAll" type="button">Apply to all students</button><button class="primary" id="saveAttendance" type="button">Save attendance</button></div>
+        <p class="notice">Choose a date, set each student's status, then save. Duplicate entries for the same student and date are updated instead of duplicated.</p>
+      </section>
+
+      <section class="panel">
+        <h2>👥 Student directory</h2>
+        <div class="toolbar">
+          <input id="search" placeholder="Search name, ID, department…">
+          <select id="statusFilter"><option value="All">All statuses</option><option>Present</option><option>Absent</option><option>Late</option><option>Leave</option><option value="Not marked">Not marked</option><option value="Low">Low attendance</option></select>
+          <select id="sortBy"><option value="name">Sort: Name</option><option value="id">Sort: Student ID</option><option value="percent">Sort: Attendance %</option></select>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Student</th><th>Department</th><th>Today</th><th>Attendance</th><th>Actions</th></tr></thead><tbody id="studentRows"></tbody></table></div>
+        <div id="emptyState" class="empty">No students yet. Add a student to get started.</div>
+      </section>
+
+      <section class="panel">
+        <h2>📚 Attendance history</h2>
+        <p class="sub">Student-wise attendance records for the selected date.</p>
+        <div class="row"><div><label for="historyStudent">Choose student</label><select id="historyStudent"><option value="">Select a student</option></select></div><div><label for="historyDate">Filter by date (optional)</label><input type="date" id="historyDate"></div></div>
+        <div id="historyList" class="history-list" style="margin-top:14px"><div class="empty">Choose a student to view attendance history.</div></div>
+      </section>
+    </section>
+  </div>
+</main>
+<footer>Student Attendance Tracker · Responsive mini project · Data stays in this browser</footer>
+<script>
+const $ = id => document.getElementById(id);
+const STORAGE_KEY = "studentAttendanceTracker_v1";
+let data = loadData();
+function loadData(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||{students:[],attendance:[],threshold:75}}catch(e){return {students:[],attendance:[],threshold:75}}}
+function persist(){data.threshold=Number($("threshold").value)||75;localStorage.setItem(STORAGE_KEY,JSON.stringify(data));render()}
+function todayISO(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+$("attendanceDate").value=todayISO();$("historyDate").value="";
+$("threshold").value=data.threshold||75;
+function attendanceFor(studentId,date){return data.attendance.find(a=>a.studentId===studentId&&a.date===date)}
+function statsFor(studentId){const rows=data.attendance.filter(a=>a.studentId===studentId);const marked=rows.filter(a=>a.status!=="Leave");const present=marked.filter(a=>a.status==="Present"||a.status==="Late").length;return {total:marked.length,present,percent:marked.length?Math.round(present/marked.length*100):0}}
+function badge(status){return `<span class="badge ${String(status).toLowerCase()}">${escapeHTML(status)}</span>`}
+function escapeHTML(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function render(){
+ const date=$("attendanceDate").value||todayISO(), threshold=Number($("threshold").value)||75;
+ const today=data.students.map(s=>attendanceFor(s.id,date)).filter(Boolean);
+ $("totalStudents").textContent=data.students.length;
+ $("presentToday").textContent=today.filter(a=>a.status==="Present"||a.status==="Late").length;
+ $("absentToday").textContent=today.filter(a=>a.status==="Absent").length;
+ const marked=data.attendance.filter(a=>a.status!=="Leave"), present=marked.filter(a=>a.status==="Present"||a.status==="Late").length;
+ $("overallPercent").textContent=(marked.length?Math.round(present/marked.length*100):0)+"%";
+ const q=$("search").value.toLowerCase().trim(), filter=$("statusFilter").value;
+ let list=data.students.filter(s=>{
+   const a=attendanceFor(s.id,date), st=statsFor(s.id);
+   const matches=[s.name,s.studentId,s.department].some(v=>v.toLowerCase().includes(q));
+   let statusMatch=filter==="All"||(filter==="Not marked"&&!a)||(filter==="Low"&&st.total>0&&st.percent<threshold)||(a&&a.status===filter);
+   return matches&&statusMatch;
+ });
+ const sort=$("sortBy").value;list.sort((a,b)=>sort==="id"?a.studentId.localeCompare(b.studentId):sort==="percent"?statsFor(a.id).percent-statsFor(b.id).percent:a.name.localeCompare(b.name));
+ $("studentRows").innerHTML=list.map(s=>{
+   const a=attendanceFor(s.id,date),st=statsFor(s.id),low=st.total>0&&st.percent<threshold;
+   return `<tr class="${low?"low":""}"><td><strong>${escapeHTML(s.name)}</strong><br><small>${escapeHTML(s.studentId)}</small>${low?'<br><span class="badge late">Low attendance</span>':""}</td><td>${escapeHTML(s.department)}</td><td><select aria-label="Attendance for ${escapeHTML(s.name)}" onchange="setStatus('${s.id}',this.value)" style="min-width:110px;padding:7px"><option value="">Not marked</option>${["Present","Absent","Late","Leave"].map(x=>`<option ${a?.status===x?"selected":""}>${x}</option>`).join("")}</select></td><td><strong>${st.percent}%</strong><div class="progress"><span style="width:${st.percent}%"></span></div><small>${st.present}/${st.total} counted days</small></td><td><button class="tiny secondary" onclick="editStudent('${s.id}')">Edit</button><button class="tiny danger" onclick="deleteStudent('${s.id}')">Delete</button></td></tr>`;
+ }).join("");
+ $("emptyState").style.display=list.length?"none":"block";
+ $("historyStudent").innerHTML='<option value="">Select a student</option>'+data.students.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(s=>`<option value="${s.id}">${escapeHTML(s.name)} (${escapeHTML(s.studentId)})</option>`).join("");
+ if(window.currentHistoryStudent && data.students.some(s=>s.id===window.currentHistoryStudent))$("historyStudent").value=window.currentHistoryStudent;
+ renderHistory();
+}
+function setStatus(id,status){const date=$("attendanceDate").value||todayISO();if(!status){data.attendance=data.attendance.filter(a=>!(a.studentId===id&&a.date===date));persist();return}upsertAttendance(id,date,status);persist()}
+function upsertAttendance(studentId,date,status){const existing=attendanceFor(studentId,date);if(existing)existing.status=status;else data.attendance.push({studentId,date,status})}
+$("studentForm").addEventListener("submit",e=>{
+ e.preventDefault();const editId=$("editId").value,name=$("studentName").value.trim(),studentId=$("studentId").value.trim(),department=$("department").value.trim();
+ if(data.students.some(s=>s.studentId.toLowerCase()===studentId.toLowerCase()&&s.id!==editId)){alert("That Student ID already exists. Please enter a unique ID.");return}
+ if(editId){const s=data.students.find(x=>x.id===editId);if(s)Object.assign(s,{name,studentId,department})}
+ else data.students.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),name,studentId,department});
+ resetForm();persist();
+});
+function editStudent(id){const s=data.students.find(x=>x.id===id);if(!s)return;$("editId").value=s.id;$("studentName").value=s.name;$("studentId").value=s.studentId;$("department").value=s.department;$("formTitle").textContent="✎ Edit student";$("saveStudent").textContent="Save changes";$("cancelEdit").hidden=false;window.scrollTo({top:0,behavior:"smooth"})}
+function resetForm(){$("studentForm").reset();$("editId").value="";$("formTitle").textContent="＋ Add student";$("saveStudent").textContent="Add student";$("cancelEdit").hidden=true}
+$("cancelEdit").addEventListener("click",resetForm);
+function deleteStudent(id){const s=data.students.find(x=>x.id===id);if(!s)return;if(!confirm(`Delete ${s.name} and all their attendance records?`))return;data.students=data.students.filter(x=>x.id!==id);data.attendance=data.attendance.filter(a=>a.studentId!==id);persist()}
+$("markAll").addEventListener("click",()=>{const date=$("attendanceDate").value;if(!date){alert("Please choose an attendance date.");return}const status=$("bulkStatus").value;data.students.forEach(s=>upsertAttendance(s.id,date,status));persist()});
+$("saveAttendance").addEventListener("click",()=>{persist();alert("Attendance saved successfully!")});
+$("attendanceDate").addEventListener("change",render);
+$("threshold").addEventListener("change",persist);
+["search","statusFilter","sortBy"].forEach(id=>$(id).addEventListener(id==="search"?"input":"change",render));
+$("historyStudent").addEventListener("change",()=>{window.currentHistoryStudent=$("historyStudent").value;renderHistory()});
+$("historyDate").addEventListener("change",renderHistory);
+function renderHistory(){
+ const id=$("historyStudent").value,filterDate=$("historyDate").value,box=$("historyList");
+ if(!id){box.innerHTML='<div class="empty">Choose a student to view attendance history.</div>';return}
+ let rows=data.attendance.filter(a=>a.studentId===id&&(!filterDate||a.date===filterDate)).sort((a,b)=>b.date.localeCompare(a.date));
+ if(!rows.length){box.innerHTML='<div class="empty">No attendance records found for this selection.</div>';return}
+ box.innerHTML=rows.map(a=>`<div class="history-item"><div><strong>${new Date(a.date+"T00:00:00").toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"})}</strong><br><small>${a.date===todayISO()?"Today":""}</small></div>${badge(a.status)}<button class="tiny danger" onclick="removeRecord('${a.studentId}','${a.date}')">Delete</button></div>`).join("");
+}
+function removeRecord(id,date){if(!confirm("Delete this attendance record?"))return;data.attendance=data.attendance.filter(a=>!(a.studentId===id&&a.date===date));persist()}
+render();
+</script>
+</body>
+</html>
